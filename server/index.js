@@ -1,13 +1,11 @@
-import express from "express";
-const app = express();
+import express from 'express';
+import generateRoute from "./routes/userRoutes.js"
 
+const app = express();
 app.use(express.json());
 
-app.get('/', (req, res) => {
-    res.send('Hello, World!');
-});
+app.use("/api" , generateRoute);
 
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+app.listen(3000, () => {
+  console.log('🚀 Server running at http://localhost:3000');
 });
