@@ -6,7 +6,7 @@ const app = express();
 app.use(express.json());
 
 app.use(cors({
-  origin: 'https://readmefilegenerator.vercel.app/', 
+  origin: 'https://readmefilegenerator.vercel.app', 
   credentials: true               
 }));
 
