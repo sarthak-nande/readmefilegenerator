@@ -55,15 +55,20 @@ export async function generateReadmeFromRepo(repoUrl) {
     console.log(`📥 Cloning ${repoUrl}...`);
     execSync(`git clone ${repoUrl} ${clonePath}`, { stdio: "inherit" });
 
-    const prompt = `Generate a professional README.md for this project. Include:
+    const prompt = `
+Generate a professional README for this project. Return the result as a JSON array of objects with the following structure:
+[
+  { id: string, type: 'heading' | 'paragraph' | 'list' | 'code', title?: string, content: string | string[], level?: number, language?: string }
+]
+
+Include the following sections:
 - Project description
-- Tech stack with icons
+- Tech stack with shields.io badges
 - Setup instructions
 - How to run
-- Folder structure
-- License section
-- Fancy icons for all tech stacks
-- Make the README.md file look attractive and professional`;
+- Folder structure (as a code block)
+- License
+`;
 
     console.log("📚 Reading project files...");
     const fileContext = await readRelevantFiles(clonePath);
@@ -75,20 +80,34 @@ export async function generateReadmeFromRepo(repoUrl) {
     );
     writeFileSync(tempPromptPath, fullPrompt, "utf-8");
 
-    console.log(`🤖 Generating README.md using Gemini...`);
+    console.log(`🤖 Generating README.json using Gemini...`);
     const output = execSync(`gemini < "${tempPromptPath}"`, {
       cwd: clonePath,
       encoding: "utf-8",
     });
 
-    const readmePath = path.join(clonePath, "README.md");
-    await fs.writeFile(readmePath, output);
-
     await fs.unlink(tempPromptPath);
-
     await fs.rm(clonePath, { recursive: true, force: true });
-    console.log("✅ README.md generated successfully.");
-    return output;
+
+    // Extract first valid JSON array using regex
+    const match = output.match(/\[\s*{[\s\S]*?}\s*\]/); // match from [ { ... } ]
+
+    if (!match) {
+      console.error("❌ Could not extract JSON array from Gemini output.");
+      return null;
+    }
+
+    let jsonResult;
+    try {
+      jsonResult = JSON.parse(match[0]);
+    } catch (err) {
+      console.error("❌ Failed to parse extracted JSON:", err.message);
+      return null;
+    }
+
+
+    console.log("✅ README content parsed as JSON.");
+    return jsonResult;
   } catch (err) {
     console.error("❌ Error:", err.message);
     return null;
